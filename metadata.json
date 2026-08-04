@@ -1,0 +1,6 @@
+{
+  "name": "EduEthiopia",
+  "description": "An Ethiopian study and learning platform featuring material analysis, notes, quizzes, flashcards, Ethiopian calendar birthday tracking, grade-level personalization, and simplified AI explanations with a sleek iOS React Native visual style.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
