@@ -99,14 +99,21 @@ export default function App() {
   // Load from Firestore if user is logged in
   useEffect(() => {
     if (user.id) {
-      fetchUserProfileFromFirestore(user.id).then((remoteUser) => {
-        if (remoteUser && remoteUser.name) {
-          setUser((prev) => ({ ...prev, ...remoteUser }));
-        }
-      });
-      fetchUserHistoryFromFirestore(user.id).then((remoteHistory) => {
+      Promise.all([
+        fetchUserProfileFromFirestore(user.id),
+        fetchUserHistoryFromFirestore(user.id),
+      ]).then(([remoteUser, remoteHistory]) => {
         if (remoteHistory && remoteHistory.length > 0) {
           setHistory(remoteHistory);
+        }
+        if (remoteUser && remoteUser.name) {
+          const histLen = remoteHistory ? remoteHistory.length : 0;
+          const computedCount = Math.max(remoteUser.uploadCount || 0, histLen);
+          setUser((prev) => ({
+            ...prev,
+            ...remoteUser,
+            uploadCount: computedCount,
+          }));
         }
       });
     }
@@ -150,13 +157,10 @@ export default function App() {
         existingUser.isPro = true;
       }
 
-      // Existing user: restore profile & study history
-      setUser(existingUser);
-      localStorage.setItem('eduethiopia_user', JSON.stringify(existingUser));
-      localStorage.setItem(`edu_user_${userId}`, JSON.stringify(existingUser));
-
       const remoteHistory = await fetchUserHistoryFromFirestore(userId);
+      let historyItems: HistoryItem[] = [];
       if (remoteHistory && remoteHistory.length > 0) {
+        historyItems = remoteHistory;
         setHistory(remoteHistory);
         localStorage.setItem('eduethiopia_history', JSON.stringify(remoteHistory));
         localStorage.setItem(`edu_history_${userId}`, JSON.stringify(remoteHistory));
@@ -164,9 +168,9 @@ export default function App() {
         const localHistStr = localStorage.getItem(`edu_history_${userId}`);
         if (localHistStr) {
           try {
-            const localHist = JSON.parse(localHistStr);
-            setHistory(localHist);
-            localStorage.setItem('eduethiopia_history', JSON.stringify(localHist));
+            historyItems = JSON.parse(localHistStr);
+            setHistory(historyItems);
+            localStorage.setItem('eduethiopia_history', JSON.stringify(historyItems));
           } catch (e) {
             setHistory([]);
           }
@@ -175,6 +179,15 @@ export default function App() {
           localStorage.removeItem('eduethiopia_history');
         }
       }
+
+      // Ensure uploadCount reflects actual number of history items created
+      const computedUploadCount = Math.max(existingUser.uploadCount || 0, historyItems.length);
+      existingUser.uploadCount = computedUploadCount;
+
+      // Existing user: restore profile & study history
+      setUser(existingUser);
+      localStorage.setItem('eduethiopia_user', JSON.stringify(existingUser));
+      localStorage.setItem(`edu_user_${userId}`, JSON.stringify(existingUser));
 
       setScreen('main');
     } else {

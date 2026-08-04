@@ -92,7 +92,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       setAdminEmailInput('');
       setAdminPasswordInput('');
     } else {
-      setAdminLoginError('Invalid Admin credentials! Use email: makieyosiyas83@gmail.com & password: eyosiyasmaki123@');
+      setAdminLoginError('Invalid admin email or password.');
     }
   };
 
@@ -799,7 +799,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     type="email"
                     value={adminEmailInput}
                     onChange={(e) => setAdminEmailInput(e.target.value)}
-                    placeholder="makieyosiyas83@gmail.com"
+                    placeholder="admin@eduethiopia.et"
                     required
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500 font-mono"
                   />
@@ -813,7 +813,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     type="password"
                     value={adminPasswordInput}
                     onChange={(e) => setAdminPasswordInput(e.target.value)}
-                    placeholder="eyosiyasmaki123@"
+                    placeholder="••••••••"
                     required
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500 font-mono"
                   />

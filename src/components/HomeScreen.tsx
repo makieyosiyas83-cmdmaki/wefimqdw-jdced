@@ -77,7 +77,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
 
   const currentUploadCount = user.uploadCount || 0;
-  const isLimitReached = !user.isPro && currentUploadCount >= 5;
+  const remainingChances = user.isPro ? Infinity : Math.max(0, 5 - currentUploadCount);
+  const isLimitReached = !user.isPro && remainingChances <= 0;
 
   const handleContinueClick = () => {
     if (isLimitReached) {
@@ -98,6 +99,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleStartGeneration = async () => {
+    if (isLimitReached) {
+      setShowLimitModal(true);
+      return;
+    }
+
     setShowOptionsModal(false);
     setIsGenerating(true);
     setErrorMsg('');
@@ -297,15 +303,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             {user.isPro ? (
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 flex items-center space-x-1">
                 <Sparkles className="w-3 h-3" />
-                <span>PRO</span>
+                <span>PRO UNLIMITED</span>
               </span>
             ) : (
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-                currentUploadCount >= 5 
+                remainingChances <= 0 
                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' 
                   : 'bg-neutral-800 text-neutral-300 border-neutral-700'
               }`}>
-                {currentUploadCount} / 5 Free Uploads
+                {remainingChances} Free {remainingChances === 1 ? 'Chance' : 'Chances'} Left ({currentUploadCount}/5 Used)
               </span>
             )}
           </div>
