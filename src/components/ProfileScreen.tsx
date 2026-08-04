@@ -36,6 +36,7 @@ interface ProfileScreenProps {
   language: Language;
   onUpdateUser: (updatedUser: Partial<UserProfile>) => void;
   onLogout: () => void;
+  onOpenAdminScreen?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -43,6 +44,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   language,
   onUpdateUser,
   onLogout,
+  onOpenAdminScreen,
 }) => {
   const [showProModal, setShowProModal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -88,9 +90,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     ) {
       setUnlockedAdmin(true);
       setShowAdminLoginModal(false);
-      setShowAdminPanel(true);
       setAdminEmailInput('');
       setAdminPasswordInput('');
+      if (onOpenAdminScreen) {
+        onOpenAdminScreen();
+      } else {
+        setShowAdminPanel(true);
+      }
     } else {
       setAdminLoginError('Invalid admin email or password.');
     }
@@ -315,8 +321,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </div>
 
           <button
-            onClick={() => setShowAdminPanel(true)}
-            className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black font-extrabold text-xs hover:bg-emerald-400 transition-colors shadow-md shrink-0"
+            onClick={() => {
+              if (onOpenAdminScreen) {
+                onOpenAdminScreen();
+              } else {
+                setShowAdminPanel(true);
+              }
+            }}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black font-extrabold text-xs hover:bg-emerald-400 transition-colors shadow-md shrink-0 cursor-pointer"
           >
             Open Admin
           </button>

@@ -8,6 +8,7 @@ import { OnboardingScreen } from './components/OnboardingScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { HistoryScreen } from './components/HistoryScreen';
 import { ProfileScreen } from './components/ProfileScreen';
+import { AdminPanelScreen } from './components/AdminPanelScreen';
 import {
   saveUserProfileToFirestore,
   fetchUserProfileFromFirestore,
@@ -320,9 +321,18 @@ export default function App() {
               language={user.language}
               onUpdateUser={handleUpdateUser}
               onLogout={handleLogout}
+              onOpenAdminScreen={() => setScreen('admin')}
             />
           )}
         </>
+      )}
+
+      {screen === 'admin' && (
+        <AdminPanelScreen
+          user={user}
+          setUser={setUser}
+          onExitAdmin={() => setScreen('main')}
+        />
       )}
     </IOSWrapper>
   );

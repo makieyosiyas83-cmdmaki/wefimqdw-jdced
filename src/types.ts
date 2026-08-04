@@ -1,6 +1,6 @@
 export type Language = 'en' | 'am';
 
-export type AppScreen = 'welcome' | 'auth' | 'onboarding' | 'main';
+export type AppScreen = 'welcome' | 'auth' | 'onboarding' | 'main' | 'admin';
 
 export type MainTab = 'home' | 'history' | 'profile';
 
