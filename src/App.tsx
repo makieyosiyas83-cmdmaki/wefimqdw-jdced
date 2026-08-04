@@ -25,7 +25,17 @@ export function getUserIdFromIdentifier(identifier: string): string {
 export default function App() {
   // Screen state
   const [screen, setScreen] = useState<AppScreen>(() => {
+    const savedUserStr = localStorage.getItem('eduethiopia_user');
+    if (savedUserStr) {
+      try {
+        const parsedUser = JSON.parse(savedUserStr);
+        if (parsedUser && parsedUser.id && parsedUser.name) {
+          return 'main';
+        }
+      } catch (e) {}
+    }
     const savedScreen = localStorage.getItem('eduethiopia_screen');
+    if (savedScreen === 'main') return 'main';
     return (savedScreen as AppScreen) || 'welcome';
   });
 
@@ -99,6 +109,9 @@ export default function App() {
   // Load from Firestore if user is logged in
   useEffect(() => {
     if (user.id) {
+      if (user.name && (screen === 'welcome' || screen === 'auth')) {
+        setScreen('main');
+      }
       Promise.all([
         fetchUserProfileFromFirestore(user.id),
         fetchUserHistoryFromFirestore(user.id),
@@ -114,6 +127,7 @@ export default function App() {
             ...remoteUser,
             uploadCount: computedCount,
           }));
+          setScreen('main');
         }
       });
     }

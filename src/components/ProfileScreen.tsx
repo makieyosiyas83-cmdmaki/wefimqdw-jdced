@@ -296,40 +296,32 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* App Owner Payment Verification Dashboard Button (Admin Panel Access) */}
-      <div className="bg-neutral-900/90 border border-emerald-500/30 rounded-3xl p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
-            <Shield className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="font-bold text-xs text-white flex items-center space-x-1.5">
-              <span>Owner Payment Dashboard</span>
-              {isAdmin ? (
+      {/* App Owner Payment Verification Dashboard (Visible ONLY when Admin is Active/Logged In) */}
+      {isAdmin && (
+        <div className="bg-neutral-900/90 border border-emerald-500/30 rounded-3xl p-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs text-white flex items-center space-x-1.5">
+                <span>Owner Payment Dashboard</span>
                 <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-mono px-1.5 py-0.2 rounded">
                   ADMIN ACTIVE
                 </span>
-              ) : (
-                <Lock className="w-3 h-3 text-neutral-400" />
-              )}
-            </h4>
-            <p className="text-[10px] text-neutral-400">Verify Telebirr SMS & receive upgrade alerts</p>
+              </h4>
+              <p className="text-[10px] text-neutral-400">Verify Telebirr SMS & receive upgrade alerts</p>
+            </div>
           </div>
-        </div>
 
-        <button
-          onClick={() => {
-            if (isAdmin) {
-              setShowAdminPanel(true);
-            } else {
-              setShowAdminLoginModal(true);
-            }
-          }}
-          className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black font-extrabold text-xs hover:bg-emerald-400 transition-colors shadow-md shrink-0"
-        >
-          {isAdmin ? 'Open Admin' : 'Admin Login'}
-        </button>
-      </div>
+          <button
+            onClick={() => setShowAdminPanel(true)}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black font-extrabold text-xs hover:bg-emerald-400 transition-colors shadow-md shrink-0"
+          >
+            Open Admin
+          </button>
+        </div>
+      )}
 
       {/* Language Preference Selector */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 space-y-3">
@@ -420,6 +412,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <LogOut className="w-4 h-4" />
           <span>{language === 'am' ? 'ውጣ' : 'Sign Out'}</span>
         </button>
+
+        {!isAdmin && (
+          <div className="pt-3 text-center">
+            <button
+              onClick={() => setShowAdminLoginModal(true)}
+              className="text-[10px] text-neutral-600 hover:text-neutral-400 font-mono flex items-center justify-center space-x-1 mx-auto py-1.5 px-3 rounded-lg hover:bg-neutral-900/50 transition-colors"
+            >
+              <Lock className="w-3 h-3 text-neutral-500" />
+              <span>Admin Login</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Pro Plan Upgrade Modal */}
