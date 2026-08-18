@@ -31,6 +31,8 @@ import {
   KeyRound,
 } from 'lucide-react';
 
+import { APP_CONFIG } from '../config';
+
 interface ProfileScreenProps {
   user: UserProfile;
   language: Language;
@@ -46,20 +48,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onLogout,
   onOpenAdminScreen,
 }) => {
-  const [showProModal, setShowProModal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>(user.avatarUrl || '');
   
-  // User payment state
-  const [senderPhone, setSenderPhone] = useState(user.phone || '');
-  const [telebirrRef, setTelebirrRef] = useState('');
-  const [receiptScreenshot, setReceiptScreenshot] = useState<string>('');
-  const [telebirrStep, setTelebirrStep] = useState<'input' | 'submitted' | 'approved'>('input');
-  const [verifyingAuto, setVerifyingAuto] = useState(false);
-  
-  // Dynamic 6-digit payment code generated per session/modal open
-  const [sixDigitCode, setSixDigitCode] = useState<string>('839201');
-
   // Admin payment verification & credential state
   const [paymentQueue, setPaymentQueue] = useState<PaymentRequest[]>([]);
   const [loadingAdmin, setLoadingAdmin] = useState(false);
@@ -69,12 +60,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [adminLoginError, setAdminLoginError] = useState('');
 
-  // Check if current logged-in user is admin (email: makieyosiyas83@gmail.com, or contains eyosiyasmaki123)
+  // Check if current logged-in user is admin
   const isAdmin = Boolean(
     unlockedAdmin ||
-    (user.email && (user.email.toLowerCase().includes('makieyosiyas83@gmail.com') || user.email.toLowerCase().includes('eyosiyasmaki123'))) ||
-    (user.phone && user.phone.toLowerCase().includes('eyosiyasmaki123')) ||
-    (user.name && user.name.toLowerCase().includes('eyosiyasmaki123'))
+    (user.email && user.email.toLowerCase().trim() === APP_CONFIG.adminEmail.toLowerCase().trim())
   );
 
   const handleAdminLoginSubmit = (e: React.FormEvent) => {
@@ -85,8 +74,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const cleanPass = adminPasswordInput.trim();
 
     if (
-      (cleanEmail === 'makieyosiyas83@gmail.com' || cleanEmail.includes('eyosiyasmaki123') || cleanEmail.includes('makieyosiyas')) &&
-      (cleanPass === 'eyosiyasmaki123@' || cleanPass === 'eyosiyasmaki123' || cleanPass.includes('eyosiyas'))
+      cleanEmail === APP_CONFIG.adminEmail.toLowerCase() &&
+      cleanPass === APP_CONFIG.adminPassword
     ) {
       setUnlockedAdmin(true);
       setShowAdminLoginModal(false);
@@ -102,17 +91,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (showProModal) {
-      // Generate a brand new unique 6-digit payment code every time someone opens payment modal
-      const freshCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setSixDigitCode(freshCode);
-      setTelebirrStep('input');
-      setReceiptScreenshot('');
-      setTelebirrRef('');
-    }
-  }, [showProModal]);
-
   const handleFetchAdminQueue = async () => {
     setLoadingAdmin(true);
     const requests = await fetchAllPaymentRequestsFromFirestore();
@@ -125,68 +103,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       handleFetchAdminQueue();
     }
   }, [showAdminPanel]);
-
-  const handleReceiptImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setReceiptScreenshot(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUserSubmitTelebirr = async () => {
-    if (!receiptScreenshot && (!telebirrRef || telebirrRef.trim().length < 4)) {
-      alert(language === 'am' 
-        ? 'እባክዎን የቴሌብር ክፍያ ደረሰኝ ፎቶ ያስገቡ ወይም የቴሌብር Transaction Ref ID ይጻፉ' 
-        : 'Please upload a screenshot of your Telebirr receipt image OR enter your Telebirr Transaction ID');
-      return;
-    }
-
-    setVerifyingAuto(true);
-
-    try {
-      const cleanRef = (telebirrRef || 'TLB' + Math.floor(10000000 + Math.random() * 90000000)).trim().toUpperCase();
-
-      const newRequest: PaymentRequest = {
-        id: 'req_' + Date.now(),
-        userId: user.id || 'user_' + Date.now(),
-        userName: user.name || 'Student',
-        userPhone: senderPhone || user.phone || '0956778184',
-        telebirrRef: cleanRef,
-        sixDigitCode: sixDigitCode,
-        receiptImage: receiptScreenshot,
-        amount: 500,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      };
-
-      await createPaymentRequestInFirestore(newRequest);
-
-      // Trigger upgrade notification to admin email makieyosiyas@gmail.com
-      fetch('/api/notify-admin-upgrade', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userName: user.name || 'Student',
-          userPhone: senderPhone || user.phone || '0956778184',
-          userEmail: user.email || 'N/A',
-          telebirrRef: cleanRef,
-          sixDigitCode: sixDigitCode,
-          amount: 500,
-          receiptImage: receiptScreenshot,
-        }),
-      }).catch((e) => console.log('Notification API error:', e));
-
-      setTelebirrStep('submitted');
-      setVerifyingAuto(false);
-    } catch (err) {
-      setVerifyingAuto(false);
-      alert(language === 'am' ? 'የመረብ ግንኙነት ችግር ተፈጥሯል።' : 'Network error submitting Telebirr payment receipt.');
-    }
-  };
 
   const handleAdminApprove = async (req: PaymentRequest) => {
     await updatePaymentRequestStatusInFirestore(req.id, 'approved');
@@ -283,22 +199,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </div>
         </div>
 
-        {/* Upgrade Plan Banner */}
+        {/* Free Community Access Banner */}
         <div className="mt-4 pt-4 border-t border-neutral-800 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-white flex items-center space-x-1">
-              <Zap className="w-3.5 h-3.5 text-white" />
-              <span>EduEthiopia Pro</span>
+            <span className="text-xs font-bold text-emerald-400 flex items-center space-x-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Free & Unlimited Access</span>
             </span>
-            <p className="text-[10px] text-neutral-400">Unlimited AI notes, quizzes, & exam prep</p>
+            <p className="text-[10px] text-neutral-400">All AI notes, quizzes, & study cards are 100% free</p>
           </div>
 
-          <button
-            onClick={() => setShowProModal(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-colors shadow-md"
-          >
-            {user.isPro ? 'Manage Plan' : 'Upgrade Plan'}
-          </button>
+          <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold text-[11px] border border-emerald-500/30">
+            ACTIVE
+          </span>
         </div>
       </div>
 
@@ -437,206 +350,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </div>
         )}
       </div>
-
-      {/* Pro Plan Upgrade Modal */}
-      <AnimatePresence>
-        {showProModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 text-white shadow-2xl relative max-h-[85vh] flex flex-col overflow-hidden"
-            >
-              {/* Modal Header */}
-              <div className="flex justify-between items-center pb-3 border-b border-neutral-800 shrink-0">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold text-sm">
-                    PRO
-                  </div>
-                  <h3 className="font-bold text-base">EduEthiopia Pro Tier</h3>
-                </div>
-                <button
-                  onClick={() => setShowProModal(false)}
-                  className="p-1.5 rounded-full bg-neutral-800 text-neutral-400 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Modal Scrollable Body */}
-              <div className="flex-1 overflow-y-auto my-3 space-y-3.5 pr-1 text-xs">
-                {/* Monthly price header */}
-                <div className="text-center bg-neutral-950 p-3.5 rounded-2xl border border-neutral-800">
-                  <span className="text-3xl font-extrabold text-white font-mono">500 ETB</span>
-                  <span className="text-neutral-400 text-xs ml-1 font-mono">/ month</span>
-                  <span className="block text-emerald-400 text-[11px] mt-1 font-medium">
-                    ⚡ {language === 'am' ? 'በቴሌብር ይክፈሉ — ወርሃዊ PRO አባልነት' : 'Monthly Telebirr PRO Membership'}
-                  </span>
-                </div>
-
-                {telebirrStep === 'submitted' ? (
-                  <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl text-center space-y-2">
-                    <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-                      <Clock className="w-5 h-5 animate-pulse" />
-                    </div>
-                    <h4 className="font-extrabold text-sm text-amber-400">
-                      {language === 'am' ? 'የክፍያ ደረሰኝ ለባለቤቱ ተልኳል!' : 'Receipt Submitted for Verification!'}
-                    </h4>
-                    <p className="text-[11px] text-neutral-300 leading-relaxed">
-                      {language === 'am'
-                        ? `የላኩት የቴሌብር ደረሰኝ እና ልዩ የ 6-ዲጂት ኮድ (${sixDigitCode}) ለባለቤቱ ተልኳል። ባለቤቱ በቴሌብር SMS ማረጋገጫ ሲያረጋግጥ PRO ወዲያውኑ ይከፈታል።`
-                        : `Your payment receipt with unique remark code ${sixDigitCode} was submitted to the owner dashboard. The app owner will verify your code against Telebirr SMS and activate your PRO access.`}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Step 1: 6-Digit Payment Code Banner */}
-                    <div className="bg-neutral-950 p-3.5 rounded-2xl border border-emerald-500/30 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-neutral-400 font-bold uppercase">
-                          {language === 'am' ? 'ደረጃ 1፡ የእርስዎ 6-ዲጂት የክፍያ ኮድ' : 'Step 1: Your 6-Digit Payment Code'}
-                        </span>
-                        <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono font-bold">
-                          Telebirr Reason / Remark
-                        </span>
-                      </div>
-
-                      <div className="bg-neutral-900 p-2.5 rounded-xl border border-neutral-800 text-center">
-                        <div className="text-2xl font-black font-mono tracking-[0.3em] text-emerald-400 my-1">
-                          {sixDigitCode}
-                        </div>
-                        <p className="text-[10px] text-neutral-300">
-                          {language === 'am'
-                            ? 'ለ 0956778184 (ቴሌብር) 500 ብር ሲልኩ በ "Reason/Remark" ቦታ ይህንን 6-ዲጂት ኮድ ያስገቡ!'
-                            : 'Transfer 500 ETB to 0956778184 via Telebirr (*127#) and write this 6-digit code in the Reason / Description field.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Step 2: Upload Screenshot of Payment Receipt */}
-                    <div className="bg-neutral-950 p-3.5 rounded-2xl border border-neutral-800 space-y-2">
-                      <span className="text-[10px] text-neutral-400 font-bold uppercase block">
-                        {language === 'am' ? 'ደረጃ 2፡ የቴሌብር ክፍያ ደረሰኝ ፎቶ (Screenshot)' : 'Step 2: Upload Telebirr Receipt Screenshot'}
-                      </span>
-
-                      <div className="border-2 border-dashed border-neutral-800 hover:border-neutral-700 rounded-xl p-3 text-center bg-neutral-900/50">
-                        {receiptScreenshot ? (
-                          <div className="space-y-2">
-                            <img
-                              src={receiptScreenshot}
-                              alt="Receipt Preview"
-                              className="max-h-28 mx-auto rounded-lg border border-neutral-700 object-contain"
-                            />
-                            <span className="text-[10px] text-emerald-400 font-bold block">
-                              ✓ {language === 'am' ? 'የክፍያ ደረሰኝ ተመርጧል' : 'Receipt screenshot loaded'}
-                            </span>
-                          </div>
-                        ) : (
-                          <div>
-                            <Camera className="w-6 h-6 mx-auto text-neutral-400 mb-1" />
-                            <p className="text-[11px] text-neutral-300 font-semibold">
-                              {language === 'am' ? 'የቴሌብር ደረሰኝ ፎቶ እዚህ ይስቀሉ' : 'Attach Telebirr Receipt Screenshot'}
-                            </p>
-                          </div>
-                        )}
-
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleReceiptImageUpload}
-                          className="hidden"
-                          id="telebirr-receipt-file-input"
-                        />
-                        <label
-                          htmlFor="telebirr-receipt-file-input"
-                          className="mt-2 inline-block px-3 py-1 bg-neutral-800 text-white rounded-lg text-[11px] font-bold cursor-pointer border border-neutral-700 hover:bg-neutral-700"
-                        >
-                          {receiptScreenshot
-                            ? (language === 'am' ? 'ፎቶ ቀይር' : 'Change Screenshot')
-                            : (language === 'am' ? 'ፎቶ ምረጥ' : 'Upload Screenshot')}
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Step 3: Optional Sender Phone & Ref ID */}
-                    <div className="bg-neutral-950 p-3.5 rounded-2xl border border-neutral-800 space-y-2.5">
-                      <span className="text-[10px] text-neutral-400 font-bold uppercase block">
-                        {language === 'am' ? 'ደረጃ 3፡ ስልክ እና SMS Ref (አማራጭ)' : 'Step 3: Phone & Transaction Ref (Optional)'}
-                      </span>
-
-                      <div>
-                        <label className="block text-[10px] text-neutral-400 mb-1">
-                          {language === 'am' ? 'የእርስዎ ቴሌብር ስልክ ቁጥር:' : 'Your Sender Telebirr Phone:'}
-                        </label>
-                        <input
-                          type="tel"
-                          value={senderPhone}
-                          onChange={(e) => setSenderPhone(e.target.value)}
-                          placeholder="0912345678"
-                          className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-neutral-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] text-neutral-400 mb-1">
-                          {language === 'am' ? 'የቴሌብር Transaction Ref ID (ለምሳሌ TLB9823412):' : 'Telebirr SMS Ref ID (e.g. TLB9823412):'}
-                        </label>
-                        <input
-                          type="text"
-                          value={telebirrRef}
-                          onChange={(e) => setTelebirrRef(e.target.value.toUpperCase())}
-                          placeholder="TLB98234102"
-                          className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-neutral-500 tracking-wider"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Sticky Footer Pay Button */}
-              <div className="pt-3 border-t border-neutral-800 shrink-0">
-                {verifyingAuto ? (
-                  <div className="w-full py-3.5 rounded-2xl bg-neutral-800 text-white font-bold text-xs text-center flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span>{language === 'am' ? 'የቴሌብር ደረሰኝ እየተላከ ነው...' : 'Submitting Receipt to Owner...'}</span>
-                  </div>
-                ) : telebirrStep === 'submitted' ? (
-                  <button
-                    onClick={() => setShowProModal(false)}
-                    className="w-full py-3.5 rounded-2xl bg-amber-500 text-black font-extrabold text-xs text-center shadow-lg hover:bg-amber-400 transition-all cursor-pointer flex items-center justify-center space-x-2"
-                  >
-                    <Clock className="w-4 h-4 text-black" />
-                    <span>{language === 'am' ? 'የባለቤት ማረጋገጫ በመጠበቅ ላይ (ዝጋ)' : 'Pending Owner Verification (Close)'}</span>
-                  </button>
-                ) : telebirrStep === 'approved' || user.isPro ? (
-                  <button
-                    onClick={() => {
-                      alert(language === 'am' 
-                        ? '🎉 የኢዱኢትዮጵያ PRO አባልነትዎ በስራ ላይ ነው! ያልተገደበ አገልግሎት ተከፍቷል።' 
-                        : '🎉 Your EduEthiopia PRO subscription is active! Unlimited AI study tools unlocked.');
-                      setShowProModal(false);
-                    }}
-                    className="w-full py-3.5 rounded-2xl bg-emerald-500 text-black font-extrabold text-xs text-center shadow-lg hover:bg-emerald-400 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-98"
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-black" />
-                    <span>⚡ {language === 'am' ? 'PRO ተከፍቷል!' : 'PRO Activated!'}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleUserSubmitTelebirr}
-                    className="w-full py-3.5 rounded-2xl bg-white text-black font-extrabold text-xs shadow-lg hover:bg-neutral-200 transition-all flex items-center justify-center space-x-2 active:scale-98"
-                  >
-                    <Zap className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-                    <span>{language === 'am' ? 'የክፍያ ደረሰኝ ላክ (500 ETB)' : 'Submit Receipt for Verification (500 ETB)'}</span>
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* App Owner Payment Verification Modal (Admin Only) */}
       <AnimatePresence>

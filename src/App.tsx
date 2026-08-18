@@ -70,7 +70,7 @@ export default function App() {
       ethiopianBirthday: { day: 1, month: 'Meskerem', year: 2005 },
       language: 'en',
       grade: 11,
-      isPro: false,
+      isPro: true,
     };
   });
 

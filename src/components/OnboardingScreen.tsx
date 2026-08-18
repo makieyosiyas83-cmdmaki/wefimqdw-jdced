@@ -52,7 +52,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       ethiopianBirthday,
       language: selectedLanguage,
       grade,
-      isPro: isEyosiyasmaki123Admin ? true : false,
+      isPro: true,
     };
 
     onComplete(newProfile);

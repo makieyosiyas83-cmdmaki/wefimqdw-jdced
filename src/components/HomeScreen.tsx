@@ -57,9 +57,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [fileObj, setFileObj] = useState<File | null>(null);
   const [customInstruction, setCustomInstruction] = useState('');
 
-  // Limit modal state
-  const [showLimitModal, setShowLimitModal] = useState(false);
-
   // UI Flow Modal state
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedGenType, setSelectedGenType] = useState<GenerationType>('notes');
@@ -76,16 +73,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const [errorMsg, setErrorMsg] = useState('');
 
-  const currentUploadCount = user.uploadCount || 0;
-  const remainingChances = user.isPro ? Infinity : Math.max(0, 5 - currentUploadCount);
-  const isLimitReached = !user.isPro && remainingChances <= 0;
-
   const handleContinueClick = () => {
-    if (isLimitReached) {
-      setShowLimitModal(true);
-      return;
-    }
-
     if (!textContent.trim() && !fileObj && !youtubeUrl.trim()) {
       setErrorMsg(
         language === 'am'
@@ -99,11 +87,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleStartGeneration = async () => {
-    if (isLimitReached) {
-      setShowLimitModal(true);
-      return;
-    }
-
     setShowOptionsModal(false);
     setIsGenerating(true);
     setErrorMsg('');
@@ -300,20 +283,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <span>GRADE {user.grade} • ETHIOPIAN CURRICULUM</span>
             </div>
 
-            {user.isPro ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 flex items-center space-x-1">
-                <Sparkles className="w-3 h-3" />
-                <span>PRO UNLIMITED</span>
-              </span>
-            ) : (
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-                remainingChances <= 0 
-                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' 
-                  : 'bg-neutral-800 text-neutral-300 border-neutral-700'
-              }`}>
-                {remainingChances} Free {remainingChances === 1 ? 'Chance' : 'Chances'} Left ({currentUploadCount}/5 Used)
-              </span>
-            )}
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 flex items-center space-x-1">
+              <Sparkles className="w-3 h-3 text-emerald-400" />
+              <span>100% FREE & UNLIMITED</span>
+            </span>
           </div>
           <h2 className="text-xl font-extrabold tracking-tight text-white">
             {language === 'am' ? 'እባክዎን የትምህርት ቁሳቁስ ያስገቡ' : 'Upload Study Material'}
@@ -938,60 +911,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 Synthesizing notes, quizzes, and study cards for Ethiopian Grade {user.grade}
               </p>
             </div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Free Upload Limit Reached Modal */}
-      <AnimatePresence>
-        {showLimitModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-sm bg-neutral-900 border border-amber-500/30 rounded-3xl p-6 text-white text-center shadow-2xl relative space-y-4"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/30">
-                <Lock className="w-7 h-7" />
-              </div>
-
-              <div>
-                <span className="text-[10px] font-mono uppercase bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full font-bold">
-                  {language === 'am' ? '5/5 ነፃ ጭነቶች ተጠናቀዋል' : '5 / 5 Free Uploads Used'}
-                </span>
-                <h3 className="text-lg font-extrabold mt-2 text-white">
-                  {language === 'am' ? 'የነፃ አጠቃቀም ገደብ ደርሰዋል' : 'Free Upload Limit Reached'}
-                </h3>
-                <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
-                  {language === 'am'
-                    ? 'ያለ ገደብ ማጠቃለያዎችን፣ ጥያቄዎችን እና ፍላሽካርዶችን ለማዘጋጀት በቴሌብር PRO አባል ይሁኑ (500 ETB/ወር)።'
-                    : 'Without paying, free accounts can only upload 5 study materials. Upgrade to EduEthiopia Pro via Telebirr (500 ETB/month) for unlimited access!'}
-                </p>
-              </div>
-
-              <div className="pt-2 space-y-2">
-                <button
-                  onClick={() => {
-                    setShowLimitModal(false);
-                    if (onSelectProfileTab) {
-                      onSelectProfileTab();
-                    }
-                  }}
-                  className="w-full py-3.5 rounded-2xl bg-emerald-500 text-black font-extrabold text-xs shadow-lg hover:bg-emerald-400 transition-all flex items-center justify-center space-x-2"
-                >
-                  <Sparkles className="w-4 h-4 fill-black" />
-                  <span>{language === 'am' ? 'በቴሌብር PRO ይክፈቱ (500 ETB)' : 'Upgrade to PRO via Telebirr'}</span>
-                </button>
-
-                <button
-                  onClick={() => setShowLimitModal(false)}
-                  className="w-full py-2.5 rounded-2xl bg-neutral-800 text-neutral-400 text-xs hover:text-white font-medium"
-                >
-                  {language === 'am' ? 'ዝጋ' : 'Close'}
-                </button>
-              </div>
-            </motion.div>
           </div>
         )}
       </AnimatePresence>

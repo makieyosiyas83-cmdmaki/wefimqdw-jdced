@@ -25,6 +25,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { PaymentRequest, UserProfile } from '../types';
+import { APP_CONFIG } from '../config';
 import {
   fetchAllPaymentRequestsFromFirestore,
   updatePaymentRequestStatusInFirestore,
@@ -195,7 +196,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
   // Calculate statistics
   const pendingCount = paymentQueue.filter((r) => r.status === 'pending').length;
   const approvedCount = paymentQueue.filter((r) => r.status === 'approved').length;
-  const totalRevenue = approvedCount * 500; // 500 ETB per subscription
+  const totalRevenue = approvedCount * APP_CONFIG.proPriceETB;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col font-sans pb-16">
@@ -233,7 +234,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
               <Shield className="w-5 h-5 text-emerald-400 shrink-0" />
               <h1 className="text-sm font-black text-white tracking-wide">EduEthiopia Admin Portal</h1>
             </div>
-            <p className="text-[10px] text-neutral-400 font-mono">Owner Email: makieyosiyas83@gmail.com</p>
+            <p className="text-[10px] text-neutral-400 font-mono">Owner Email: {APP_CONFIG.adminEmail}</p>
           </div>
         </div>
 
@@ -269,7 +270,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400">
-                Receipt uploads send instant notifications to <span className="text-emerald-400 font-mono">makieyosiyas@gmail.com</span>
+                Receipt uploads send instant notifications to <span className="text-emerald-400 font-mono">{APP_CONFIG.adminEmail}</span>
               </p>
             </div>
           </div>

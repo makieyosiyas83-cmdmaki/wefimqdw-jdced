@@ -160,12 +160,13 @@ async function startServer() {
         });
       }
 
+      const adminEmail = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || 'admin@eduethiopia.et';
       const cleanRef = (telebirrRef || 'TLB' + Math.floor(10000000 + Math.random() * 90000000)).trim().toUpperCase();
       const code = sixDigitCode || Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Log & send upgrade notification to admin email makieyosiyas@gmail.com
-      console.log(`[UPGRADE EMAIL NOTIFICATION -> makieyosiyas@gmail.com] New Plan Upgrade Request!
-User: ${userName || 'Student'} (${userEmail || 'N/A'}, Phone: ${senderPhone || '0956778184'})
+      // Log upgrade notification for admin
+      console.log(`[UPGRADE NOTIFICATION -> ${adminEmail}] New Plan Upgrade Request!
+User: ${userName || 'Student'} (${userEmail || 'N/A'}, Phone: ${senderPhone || 'N/A'})
 Amount: ${amount || 500} ETB
 Telebirr Ref: ${cleanRef}
 6-Digit Remark Code: ${code}
@@ -178,9 +179,9 @@ Time: ${new Date().toISOString()}`);
         sixDigitCode: code,
         amount: amount || 500,
         currency: 'ETB',
-        notifiedAdminEmail: 'makieyosiyas@gmail.com',
+        notifiedAdminEmail: adminEmail,
         submittedAt: new Date().toISOString(),
-        message: 'Telebirr payment receipt submitted! Notification sent to admin (makieyosiyas@gmail.com). The owner will verify your 6-digit remark code on Telebirr and grant PRO membership.',
+        message: `Telebirr payment receipt submitted! Notification dispatched to admin (${adminEmail}). The owner will verify your 6-digit remark code on Telebirr and grant PRO membership.`,
       });
     } catch (err: any) {
       console.error('Telebirr receipt verify error:', err);
@@ -192,10 +193,10 @@ Time: ${new Date().toISOString()}`);
   app.post('/api/notify-admin-upgrade', async (req, res) => {
     try {
       const { userName, userPhone, userEmail, telebirrRef, sixDigitCode, amount, receiptImage } = req.body;
-      const targetAdminEmail = 'makieyosiyas@gmail.com';
+      const targetAdminEmail = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || 'admin@eduethiopia.et';
 
       console.log(`====================================================`);
-      console.log(`📬 [ADMIN EMAIL NOTIFICATION FOR PLAN UPGRADE]`);
+      console.log(`📬 [ADMIN NOTIFICATION FOR PLAN UPGRADE]`);
       console.log(`To Admin Email: ${targetAdminEmail}`);
       console.log(`User Name: ${userName || 'Ethiopian Student'}`);
       console.log(`User Contact: ${userPhone || userEmail || 'N/A'}`);
@@ -210,7 +211,7 @@ Time: ${new Date().toISOString()}`);
         success: true,
         notifiedEmail: targetAdminEmail,
         timestamp: new Date().toISOString(),
-        message: `Notification logged for admin email ${targetAdminEmail}.`,
+        message: `Notification logged for admin (${targetAdminEmail}).`,
       });
     } catch (err: any) {
       console.error('Notify admin upgrade error:', err);
